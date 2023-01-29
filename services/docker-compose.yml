@@ -1,0 +1,63 @@
+version: "3.8"
+services:
+  database:
+    container_name: influxdb
+    image: influx-image
+    restart: always
+    ports:
+      - "8086:8086"
+    build:
+      context: .
+      dockerfile: influx/dockerfile
+    networks:
+      default:
+        aliases:
+          - influxdb
+
+  broker:
+    container_name: rabbit
+    image: rabbit-image
+    restart: always
+    ports:
+      - "1883:1883"
+      - "15672:15672"
+      - "5672:5672"
+    build:
+      context: .
+      dockerfile: rabbit/dockerfile
+    networks:
+      default:
+        aliases:
+          - rabbit
+
+  visualizador:
+    container_name: grafana
+    image: grafana-image
+    restart: always
+    ports:
+      - "3000:3000"
+    build:
+      context: .
+      dockerfile: grafana/dockerfile
+    depends_on:
+      - database
+
+  telegraf:
+    container_name: telegraf
+    image: telegraf-image
+    restart: always
+    build:
+      context: .
+      dockerfile: telegraf/dockerfile
+    environment:
+      - INFLUX_TOKEN=8jaK5_yJJsMHkAKD4IM_kiiqCR9YNen7Vr6QfrL0BezXAtYtTzckBC_Q2a3s-S-MHhdT1iqxCpGGMAQ1nNzgRA==
+    command: --config http://influxdb:8086/api/v2/telegrafs/0aaac6a74ce8b000
+    depends_on:
+      - database
+
+networks:
+  default:
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.29.0.0/24
